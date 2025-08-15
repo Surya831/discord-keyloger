@@ -57,8 +57,9 @@ This tool is designed for **ethical use only** — such as in cybersecurity labs
    ```bash
    Ctrl + Alt + P
 The program will stop logging and exit.
+
 📂 Project Structure
-    ```bash
+  
     
      ├── client.pyw                # Main keylogger script
      ├── setup_client_discord.bat  # Installer and launcher
