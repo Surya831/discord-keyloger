@@ -75,6 +75,8 @@ The program will stop logging and exit.
 🔴 Encrypted log storage before sending.
 
 🔴 Real-time monitoring dashboard.
+
+
 📜 License
 
 This project is released under the MIT License for educational use.
